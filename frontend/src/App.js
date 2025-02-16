@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import './style.css';
 
 // Connect to the backend Socket.IO server (adjust the URL if needed)
-const socket = io('http://localhost:5000');
+const socket = io('http://localhost:5001');
 
 function App() {
   const videoRef = useRef(null);

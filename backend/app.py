@@ -2,9 +2,14 @@ from flask import Flask
 from flask_socketio import SocketIO, emit
 import base64
 import cv2
+import mediapipe as mp
+from PIL import Image
 import numpy as np
 import tensorflow as tf  # In production, use TensorFlow for your CNN model
 import random
+
+mp_face_detection = mp.solutions.face_detection
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -20,9 +25,15 @@ def detect_blink(frame):
     and run your CNN to detect blink characteristics.
     """
     # Simulate a blink with a random chance (e.g., 5% chance per frame)
-    if random.random() < 0.05:
-        return True
-    return False
+    
+    second_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = mp_face_detection.FaceDetection(min_detection_confidence=0.5).process(second_frame)
+
+    if not results.detections:
+        return False
+
+    # print([direction for direction in results.directions])
+    return True
 
 @socketio.on('frame')
 def handle_frame(data):
@@ -44,6 +55,9 @@ def handle_frame(data):
     np_arr = np.frombuffer(img_bytes, np.uint8)
     frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
+    Image.fromarray(frame).save('frame.jpg')
+    # print("hello")
+    
     # Run the (dummy) blink detector on the frame
     if detect_blink(frame):
         # For demonstration, map a detected blink to the letter "A"
@@ -51,8 +65,8 @@ def handle_frame(data):
         emit('blinkText', {'letter': letter})
     # In a real implementation, you might accumulate blink sequences and then convert them to words
 
-if __name__ == '__app__':
+if __name__ == '__main__': # when we change it to __app__
     # Using eventlet for async support; you can also use gevent.
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5001, debug=True)
 
 
